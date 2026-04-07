@@ -1,10 +1,20 @@
 ## Exercise 1
 CP - Consistency, Partition tolerance
 
-After partitioning the cluster (isolating the Node 3), we still do have the quorum with remaining two nodes: $ Q=\frac{n+1}{2}=\frac{3+1}{2}=2 $.
-It means, that the group with two nodes can still operate and handle the requests I send. Increasing the counter on the Node 1 and Node 2 works.
-We do not receive any errors nor timeouts. The quorum and the consistency are maintained - the failing node does not influence the system behaviour.
-On the other hand, increasing the counter on the Node 3 is unsuccessful - we receive the timeout. This is because the node is isolated - sent requests do not reach it.
+After partitioning the cluster (isolating the Node 3), we still do have the quorum with remaining two nodes: $ Q=\frac{n+1}{2}=\frac{3+1}{2}=2 $. It means, that the group with two nodes can still operate and handle the requests I send. Increasing the counter on the Node 1 and Node 2 works. We do not receive any errors nor timeouts. The quorum and the consistency are maintained - the failing node does not influence the system behaviour. On the other hand, increasing the counter on the Node 3 is unsuccessful - we receive the timeout.
+
+We couldn't receive response from Node 3, because the system cannot guarantee consistent data there (no quorum). On the other hand, Nodes 1 and 2 can continue serving requests, because they still form a quorum. Data remains consistent between these two nodes. In conclusion, in CP systems, a node can respond only if it can ensure consistency. Nodes 1 and 2 can communicate and achieve quorum, so they are allowed to serve requests. Node 3 cannot verify its data against the quorum, so it is blocked to avoid returning obsolete and inconsistent data.
+
+After healing the network connections, the latest counter value is available on Node 3. Node 3 synchronizes its state with the cluster (thanks to Raft protocol).
 
 ## Exercise 2
 CP - Consistency, Partition tolerance
+
+In this case, the connection between all nodes is lost and the cluster becomes unavailable. Therefore, there is not a sufficient number of connected nodes to form a quorum (2). As described above, in this CP scenario, a node rejects the operation (counter incrementation or read) and returns the error "no quorum". This is expected behavior - the node cannot verify its data against the quorum and therefore does not perform the operation.
+
+After the network connections are restored, the nodes synchronize their state with the cluster. However, because there was no quorum during the "blackout", no counter increments were performed, and the counter value remains the same as it was before the network partition.
+
+## Exercise 3.
+AP - Availability, Partition tolerance
+
+This scenario differs from scenarios 1 and 2. Here, availability is prioritized over consistency. This means that all nodes serve requests, but the returned data may be obsolete or outdated. The data eventually converges to the latest state, but not immediately (eventual consistency). Increasing the counter value on one node becomes visible on the others after a brief period. After network partition, all nodes still serve requests (increasing the counter is possible on all nodes, even Node 3). As a result, different nodes may accept updates, which are resolved later when the network is restored. Once the network partition is resolved, the nodes exchange their updates and synchronize their states. After synchronization and conflict resolution, all nodes converge to the same final value. In our case, conflict resolution is performed with CRDT data structure, which provides eventual consistency.
