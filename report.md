@@ -18,3 +18,15 @@ After the network connections are restored, the nodes synchronize their state wi
 AP - Availability, Partition tolerance
 
 This scenario differs from scenarios 1 and 2. Here, availability is prioritized over consistency. This means that all nodes serve requests, but the returned data may be obsolete or outdated. The data eventually converges to the latest state, but not immediately (eventual consistency). Increasing the counter value on one node becomes visible on the others after a brief period. After network partition, all nodes still serve requests (increasing the counter is possible on all nodes, even Node 3). As a result, different nodes may accept updates, which are resolved later when the network is restored. Once the network partition is resolved, the nodes exchange their updates and synchronize their states. After synchronization and conflict resolution, all nodes converge to the same final value. In our case, conflict resolution is performed with CRDT data structure, which provides eventual consistency.
+
+## Exercise 4.
+Which data structures -- AP or CP -- require the Raft algorithm? Why is this algorithm needed? After partition heal, what is the role of Raft?
+
+Raft algorithm is required only on CP systems - it maintains strong consistency, even when some of the nodes are failing. After partition healing, Raft reconciles logs by making all nodes follow the leader's log, discarding any conflicting entries, and replicating the correct entries until every node has the same history. Without Raft (without consensus algorithm), soon the nodes in the system would have different, conflicting state. There would be no way to commit operations, elect new leader, replicate the correct entries etc. - Raft takes care of consistency.
+
+## Exercise 5.
+Explain what it means that the PN Counter in Hazelcast provides Read-Your-Writes (RYW) and Monotonic reads guarantees and why they are session guarantees.
+
+A session is an abstraction for the
+sequence of read and write operations performed during
+the execution of an application.
