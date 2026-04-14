@@ -22,11 +22,13 @@ This scenario differs from scenarios 1 and 2. Here, availability is prioritized 
 ## Exercise 4.
 Which data structures -- AP or CP -- require the Raft algorithm? Why is this algorithm needed? After partition heal, what is the role of Raft?
 
-Raft algorithm is required only on CP systems - it maintains strong consistency, even when some of the nodes are failing. After partition healing, Raft reconciles logs by making all nodes follow the leader's log, discarding any conflicting entries, and replicating the correct entries until every node has the same history. Without Raft (without consensus algorithm), soon the nodes in the system would have different, conflicting state. There would be no way to commit operations, elect new leader, replicate the correct entries etc. - Raft takes care of consistency.
+Raft algorithm is required only on CP systems - it maintains strong consistency, even when some of the nodes are failing. After partition healing, Raft reconciles logs by making all nodes follow the leader's log, discarding any conflicting entries, and replicating the correct entries until every node has the same history. Without Raft (without consensus algorithm), soon the nodes in the system would have different, conflicting state. There would be no way to commit operations, elect new leader, replicate the correct entries etc. Raft takes care of consistency.
 
 ## Exercise 5.
 Explain what it means that the PN Counter in Hazelcast provides Read-Your-Writes (RYW) and Monotonic reads guarantees and why they are session guarantees.
 
-A session is an abstraction for the
-sequence of read and write operations performed during
-the execution of an application.
+PN Counter operates in a weakly consistent, replicated environment where updates are propagated to other replicas asynchronously, meaning that at any given moment different nodes may hold different states of the counter. To address this inconsistency, the PN Counter provides two session guarantees as defined in "Session Guarantees for Weakly Consistent Replicated Data": Read-Your-Writes (RYW) and Monotonic Reads.
+
+The RYW guarantee ensures that any read operation performed within a session will be directed to a replica that has already processed all writes made earlier in that same session, so a client will never observe a state that appears to predate its own updates. Monotonic Reads guarantee that successive reads within a session are always served by replicas that are at least as up-to-date as the replica used in the previous read.
+
+Hazelcast enforces both guarantees by maintaining a vector clock on the client side, tracking the observed state after each operation and using it to select only sufficiently up-to-date replicas for subsequent calls. These are called session guarantees because they apply only within a single sequence of operations and hold only as long as a sufficiently up-to-date replica remains reachable.
